@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="TankMapMaker/TankMapMaker.vcxproj" />
+  <Project Path="TankMapMaker/TankMapMaker.vcxproj" Id="9c9e8a4b-2faf-4f6e-b3f0-41ded39614dc" />
 </Solution>

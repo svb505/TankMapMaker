@@ -17,12 +17,15 @@
 #include "renders.h"
 #include "environnement.h"
 #include "getheight.h"
+#include "building.h"
 
 // Подключи свои заголовки, если хочешь использовать существующее окружение:
 // #include "environnement.h"
 // #include "weather.h"
 // #include "tank.h"
 // #include "radar.h"
+
+Building build;
 
 void setupGui(GLFWwindow* window) {
     IMGUI_CHECKVERSION();
@@ -78,6 +81,8 @@ int main() {
         return -1;
     }
 
+    build.CreateBuilding(window);
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
     glClearColor(0.53f, 0.72f, 0.88f, 1.0f);
@@ -90,7 +95,7 @@ int main() {
     MapEditor editor(window);
 
     // Поменяй пути на реальные пути к своим OBJ.
-    editor.AddModelAsset({ "house", "Дом", "models/build/house_intact.obj", 0.6f });
+    editor.AddModelAsset({ "house", "Дом", "models/build/rue_2_cotes_complete.obj", 0.6f });
     editor.AddModelAsset({ "tree", "Дерево", "models/trees/tree.obj", 1.0f });
     editor.AddModelAsset({ "lamp", "Фонарный столб", "models/streetlamp/streetlamp.obj", 1.0f });
 
@@ -132,6 +137,8 @@ int main() {
 
         editor.Update(deltaTime);
         editor.Render();
+
+        build.DrawBuilding();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

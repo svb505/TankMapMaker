@@ -13,7 +13,9 @@ std::map<std::string, std::string> texturesFolders = {{ "WRLD","textures/" } };
 std::unordered_map<std::string, GLuint> loadedTextures;
 std::map<std::string, GLuint> allTextures;
 std::unordered_map<std::string, std::string> texturesNamesAndPaths = {
-    { "ROAD", texturesFolders["WRLD"] + "road.jpg" }
+    { "ROAD", texturesFolders["WRLD"] + "road.jpg" },
+    { "WALL1", texturesFolders["WRLD"] + "wall1.jpg" },
+    { "WALL2", texturesFolders["WRLD"] + "wall2.jpg" }
 };
 
 void LoadAllTextures() {

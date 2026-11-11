@@ -42,6 +42,9 @@
     <ClCompile Include="renders.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="building.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MapEditor.h">
@@ -66,6 +69,9 @@
       <Filter>Исходные файлы</Filter>
     </ClInclude>
     <ClInclude Include="renders.h">
+      <Filter>Исходные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="building.h">
       <Filter>Исходные файлы</Filter>
     </ClInclude>
   </ItemGroup>

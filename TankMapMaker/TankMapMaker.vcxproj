@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bounds.cpp" />
+    <ClCompile Include="building.cpp" />
     <ClCompile Include="environnement.cpp" />
     <ClCompile Include="getheight.cpp" />
     <ClCompile Include="main.cpp" />
@@ -151,6 +152,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bounds.h" />
+    <ClInclude Include="building.h" />
     <ClInclude Include="environnement.h" />
     <ClInclude Include="getheight.h" />
     <ClInclude Include="MapEditor.h" />
