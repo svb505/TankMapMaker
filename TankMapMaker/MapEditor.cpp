@@ -83,7 +83,7 @@ void MapEditor::Initialize() {
         }
 
         if (type == "lamp") {
-            model->LoadTexture("models/streetmap/texture.png");
+            model->LoadTexture("models/streetlamp/texture.png");
         }
         if (type == "tree") {
             model->LoadTextureFromFile("models/tree/texture.png");
@@ -275,18 +275,17 @@ void MapEditor::DrawRoadPreview(const svbmath::Vec3& end) {
     DrawRoad(preview);
 }
 void MapEditor::DrawObject(const PlacedObject& object) {
-    if (object.type == "tank") {
-        if (hooks.drawTank) hooks.drawTank(object.position, object.yaw);
-        return;
-    }
-    if (object.type == "radar") {
-        if (hooks.drawRadar) hooks.drawRadar(object.position, object.yaw);
+    auto it = models.find(object.type);
+
+    if (it == models.end()) {
+        std::cout << "MODEL NOT FOUND: "
+            << object.type << '\n';
         return;
     }
 
-    auto it = models.find(object.type);
-    if (it != models.end() && it->second)
+    if (it->second) {
         it->second->Draw(object.position, object.yaw, 0.0f);
+    }
 }
 void MapEditor::DrawPreview(const svbmath::Vec3& position) {
     PlacedObject preview;
@@ -567,7 +566,7 @@ void MapEditor::DrawSelection(const PlacedObject& object) {
 
 
 float MapEditor::GetObjectPickRadius(const PlacedObject& object) const {
-    if (object.type == "house") return 4.0f;
+    if (object.type == "street") return 4.0f;
     if (object.type == "tree") return 2.0f;
     if (object.type == "lamp") return 1.2f;
     if (object.type == "tank") return 2.5f;
@@ -585,7 +584,7 @@ bool MapEditor::IntersectObject(
     // Половины размеров приблизительных Bounding Box.
     svbmath::Vec3 halfSize{ 2.0f, 3.0f, 2.0f };
 
-    if (object.type == "house")
+    if (object.type == "street")
         halfSize = { 6.0f, 5.0f, 6.0f };
 
     else if (object.type == "tree")
@@ -734,9 +733,7 @@ void MapEditor::SetTool(Tool tool) {
 const char* MapEditor::ToolName(Tool tool) {
     switch (tool) {
     case Tool::Select: return "Выбор";
-    case Tool::Tank: return "Танк";
-    case Tool::Radar: return "Радар";
-    case Tool::House: return "Дом";
+    case Tool::Street: return "Улица";
     case Tool::Tree: return "Дерево";
     case Tool::Lamp: return "Фонарный столб";
     case Tool::Road: return "Дорога";
@@ -746,9 +743,7 @@ const char* MapEditor::ToolName(Tool tool) {
 
 std::string MapEditor::ToolType(Tool tool) {
     switch (tool) {
-    case Tool::Tank: return "tank";
-    case Tool::Radar: return "radar";
-    case Tool::House: return "house";
+    case Tool::Street: return "street";
     case Tool::Tree: return "tree";
     case Tool::Lamp: return "lamp";
     default: return {};
@@ -781,11 +776,8 @@ void MapEditor::DrawImGui() {
     ImGui::Text("Инструменты");
     if (ImGui::Button("Выбор")) SetTool(Tool::Select);
     ImGui::SameLine();
-    if (ImGui::Button("Танк")) SetTool(Tool::Tank);
-    ImGui::SameLine();
-    if (ImGui::Button("Радар")) SetTool(Tool::Radar);
 
-    if (ImGui::Button("Дом")) SetTool(Tool::House);
+    if (ImGui::Button("Улица")) SetTool(Tool::Street);
     ImGui::SameLine();
     if (ImGui::Button("Дерево")) SetTool(Tool::Tree);
     ImGui::SameLine();
@@ -836,7 +828,7 @@ void MapEditor::DrawImGui() {
         for (const auto& object : objects) {
             std::string displayName = object.type;
 
-            if (object.type == "house") displayName = "Дом";
+            if (object.type == "street") displayName = "Улица";
             else if (object.type == "tree") displayName = "Дерево";
             else if (object.type == "lamp") displayName = "Фонарный столб";
             else if (object.type == "tank") displayName = "Танк";
@@ -864,7 +856,7 @@ void MapEditor::DrawImGui() {
     }
 
     ImGui::Separator();
-    static char filePath[260] = "maps/test_map.json";
+    static char filePath[260] = "maps/map.json";
     ImGui::InputText("JSON-файл", filePath, sizeof(filePath));
     if (ImGui::Button("Сохранить карту")) {
         if (SaveJson(filePath))

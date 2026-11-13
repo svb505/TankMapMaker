@@ -51,9 +51,7 @@ public:
 private:
     enum class Tool {
         Select,
-        Tank,
-        Radar,
-        House,
+        Street,
         Tree,
         Lamp,
         Road

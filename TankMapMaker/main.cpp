@@ -95,7 +95,7 @@ int main() {
     MapEditor editor(window);
 
     // Поменяй пути на реальные пути к своим OBJ.
-    editor.AddModelAsset({ "house", "Дом", "models/build/rue_2_cotes_complete.obj", 0.6f });
+    editor.AddModelAsset({ "street", "Улица", "models/build/rue_2_cotes_complete.obj", 0.6f });
     editor.AddModelAsset({ "tree", "Дерево", "models/trees/tree.obj", 1.0f });
     editor.AddModelAsset({ "lamp", "Фонарный столб", "models/streetlamp/streetlamp.obj", 1.0f });
 
