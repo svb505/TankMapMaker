@@ -26,7 +26,7 @@ struct MapEditorHooks {
 };
 
 struct MapModelAsset {
-    std::string type;       // "house", "tree", "lamp"
+    std::string type;      
     std::string displayName;
     std::string objPath;
     float scale = 1.0f;
@@ -134,5 +134,19 @@ private:
 
     static const char* ToolName(Tool tool);
     static std::string ToolType(Tool tool);
+
+    bool draggingObject = false;
+    svbmath::Vec3 dragOffset{ 0.0f, 0.0f, 0.0f };
+
+    // Выделение объектов
+    float GetObjectPickRadius(const PlacedObject& object) const;
+    bool IntersectObject(const Ray& ray, const PlacedObject& object, float& distance) const;
+    int PickObject(const Ray& ray) const;
+    void DrawSelection(const PlacedObject& object);
+
+    // Ускорение камеры
+    bool cameraBoostEnabled = true;
+    float cameraBoostMultiplier = 4.0f;
+
 };
 

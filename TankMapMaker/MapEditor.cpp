@@ -101,21 +101,18 @@ void MapEditor::Shutdown() {
     models.clear();
     initialized = false;
 }
-
 void MapEditor::Update(float deltaTime) {
     if (!initialized) return;
 
     HandleKeyboard(deltaTime);
     HandleMouse();
 }
-
 void MapEditor::Render() {
     if (!initialized) return;
 
     DrawScene();
     DrawImGui();
 }
-
 void MapEditor::ApplyCamera() const {
     int width = 1, height = 1;
     glfwGetFramebufferSize(window, &width, &height);
@@ -135,11 +132,9 @@ void MapEditor::ApplyCamera() const {
     glRotatef(-cameraYaw, 0.0f, 1.0f, 0.0f);
     glTranslatef(-cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
 }
-
 float MapEditor::GroundHeight(float x, float z) const {
     return hooks.getGroundHeight ? hooks.getGroundHeight(x, z) : 0.0f;
 }
-
 void MapEditor::DrawScene() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -171,6 +166,10 @@ void MapEditor::DrawScene() {
     for (const auto& object : objects)
         DrawObject(object);
 
+    const PlacedObject* selected = FindSelectedObject();
+
+    if (selected) DrawSelection(*selected);
+
     svbmath::Vec3 mousePoint;
     if (GetMouseGroundPoint(mousePoint)) {
         if (currentTool == Tool::Road && roadWaitingForSecondPoint) {
@@ -181,7 +180,6 @@ void MapEditor::DrawScene() {
         }
     }
 }
-
 void MapEditor::DrawFallbackGround() {
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_LIGHTING);
@@ -195,7 +193,6 @@ void MapEditor::DrawFallbackGround() {
     glVertex3f(cameraPosition.x - extent, 0.0f, cameraPosition.z + extent);
     glEnd();
 }
-
 void MapEditor::DrawGrid(float centerX, float centerZ) {
     constexpr float extent = 200.0f;
     constexpr float step = 5.0f;
@@ -230,7 +227,6 @@ void MapEditor::DrawGrid(float centerX, float centerZ) {
     glEnd();
     glLineWidth(1.0f);
 }
-
 void MapEditor::DrawRoad(const Road& road) {
     const float dx = road.end.x - road.start.x;
     const float dz = road.end.z - road.start.z;
@@ -271,7 +267,6 @@ void MapEditor::DrawRoad(const Road& road) {
 
     glPopAttrib();
 }
-
 void MapEditor::DrawRoadPreview(const svbmath::Vec3& end) {
     Road preview;
     preview.start = roadFirstPoint;
@@ -279,7 +274,6 @@ void MapEditor::DrawRoadPreview(const svbmath::Vec3& end) {
     preview.width = 6.0f;
     DrawRoad(preview);
 }
-
 void MapEditor::DrawObject(const PlacedObject& object) {
     if (object.type == "tank") {
         if (hooks.drawTank) hooks.drawTank(object.position, object.yaw);
@@ -294,7 +288,6 @@ void MapEditor::DrawObject(const PlacedObject& object) {
     if (it != models.end() && it->second)
         it->second->Draw(object.position, object.yaw, 0.0f);
 }
-
 void MapEditor::DrawPreview(const svbmath::Vec3& position) {
     PlacedObject preview;
     preview.type = ToolType(currentTool);
@@ -308,38 +301,72 @@ void MapEditor::DrawPreview(const svbmath::Vec3& position) {
     glPopAttrib();
 }
 
+
 MapEditor::Ray MapEditor::BuildMouseRay() const {
-    double mouseX = 0.0, mouseY = 0.0;
+    double mouseX = 0.0;
+    double mouseY = 0.0;
+
     glfwGetCursorPos(window, &mouseX, &mouseY);
 
-    int width = 1, height = 1;
+    int width = 1;
+    int height = 1;
     glfwGetWindowSize(window, &width, &height);
+
+    int framebufferWidth = 1;
+    int framebufferHeight = 1;
+    glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+
     if (width <= 0) width = 1;
     if (height <= 0) height = 1;
+    if (framebufferHeight <= 0) framebufferHeight = 1;
 
-    const float ndcX = static_cast<float>((2.0 * mouseX) / width - 1.0);
-    const float ndcY = static_cast<float>(1.0 - (2.0 * mouseY) / height);
-    const float aspect = static_cast<float>(width) / static_cast<float>(height);
-    const float tanHalf = std::tan(cameraFov * DEG_TO_RAD * 0.5f);
+    const float ndcX =
+        static_cast<float>(2.0 * mouseX / width - 1.0);
+
+    const float ndcY =
+        static_cast<float>(1.0 - 2.0 * mouseY / height);
+
+    // Используем тот же aspect ratio, что и ApplyCamera().
+    const float aspect =
+        static_cast<float>(framebufferWidth) /
+        static_cast<float>(framebufferHeight);
+
+    const float tanHalf =
+        std::tan(cameraFov * DEG_TO_RAD * 0.5f);
 
     const float yaw = cameraYaw * DEG_TO_RAD;
     const float pitch = cameraPitch * DEG_TO_RAD;
 
+    // Базис камеры должен соответствовать ApplyCamera():
+    // glRotatef(-pitch, X)
+    // glRotatef(-yaw, Y)
+
     const svbmath::Vec3 forward{
-        std::sin(yaw) * std::cos(pitch),
-        std::sin(pitch),
+        -std::sin(yaw) * std::cos(pitch),
+         std::sin(pitch),
         -std::cos(yaw) * std::cos(pitch)
     };
-    const svbmath::Vec3 right{ std::cos(yaw), 0.0f, std::sin(yaw) };
-    const svbmath::Vec3 up = svbmath::Normalize(svbmath::Cross(right, forward));
+
+    const svbmath::Vec3 right{
+        std::cos(yaw),
+        0.0f,
+        -std::sin(yaw)
+    };
+
+    const svbmath::Vec3 up =
+        svbmath::Normalize(svbmath::Cross(right, forward));
 
     const svbmath::Vec3 direction = svbmath::Normalize(Add(
         forward,
-        Add(Mul(right, ndcX * aspect * tanHalf), Mul(up, ndcY * tanHalf))
+        Add(
+            Mul(right, ndcX * aspect * tanHalf),
+            Mul(up, ndcY * tanHalf)
+        )
     ));
 
     return { cameraPosition, direction };
 }
+
 
 bool MapEditor::IntersectGround(const Ray& ray, svbmath::Vec3& point) const {
     if (std::abs(ray.direction.y) < 0.00001f) return false;
@@ -368,16 +395,20 @@ bool MapEditor::GetMouseGroundPoint(svbmath::Vec3& point) const {
 }
 
 void MapEditor::HandleMouse() {
-    const bool rightDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    const bool rightDown =
+        glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 
     if (rightDown && !ImGui::GetIO().WantCaptureMouse) {
         double x = 0.0, y = 0.0;
         glfwGetCursorPos(window, &x, &y);
+
         if (rightMouseWasDown && !firstMouse) {
             cameraYaw += static_cast<float>(x - lastMouseX) * 0.18f;
             cameraPitch -= static_cast<float>(y - lastMouseY) * 0.18f;
+
             cameraPitch = std::clamp(cameraPitch, -89.0f, 89.0f);
         }
+
         lastMouseX = x;
         lastMouseY = y;
         firstMouse = false;
@@ -385,25 +416,80 @@ void MapEditor::HandleMouse() {
     else {
         firstMouse = true;
     }
+
     rightMouseWasDown = rightDown;
 
     const bool leftDown =
         glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
 
-    if (leftDown && !leftMouseWasDown && !ImGui::GetIO().WantCaptureMouse)
+    const bool mouseCaptured = ImGui::GetIO().WantCaptureMouse;
+
+    // Нажатие ЛКМ.
+    if (leftDown && !leftMouseWasDown && !mouseCaptured) {
         HandlePlacementClick();
+    }
+
+    // Перемещение выбранного объекта.
+    if (leftDown &&
+        leftMouseWasDown &&
+        draggingObject &&
+        currentTool == Tool::Select &&
+        !mouseCaptured) {
+
+        PlacedObject* selected = FindSelectedObject();
+
+        if (selected) {
+            svbmath::Vec3 mousePoint;
+
+            if (GetMouseGroundPoint(mousePoint)) {
+                selected->position.x = mousePoint.x + dragOffset.x;
+                selected->position.z = mousePoint.z + dragOffset.z;
+            }
+        }
+    }
+
+    // Отпустили ЛКМ — прекращаем перемещение.
+    if (!leftDown) {
+        draggingObject = false;
+    }
 
     leftMouseWasDown = leftDown;
 }
 
-void MapEditor::HandlePlacementClick() {
-    svbmath::Vec3 point;
-    if (!GetMouseGroundPoint(point)) return;
 
+void MapEditor::HandlePlacementClick() {
     if (currentTool == Tool::Select) {
-        // Выбор через список ImGui; клик по сцене пока не меняет выделение.
+        selectedObject = PickObject(BuildMouseRay());
+        draggingObject = false;
+
+        if (selectedObject != -1) {
+            PlacedObject* selected = FindSelectedObject();
+
+            svbmath::Vec3 mousePoint;
+
+            if (selected && GetMouseGroundPoint(mousePoint)) {
+                // Сохраняем смещение между объектом и курсором.
+                dragOffset.x = selected->position.x - mousePoint.x;
+                dragOffset.y = 0.0f;
+                dragOffset.z = selected->position.z - mousePoint.z;
+
+                draggingObject = true;
+            }
+
+            std::cout << "Selected object ID: "
+                << selectedObject << '\n';
+        }
+        else {
+            std::cout << "No object selected\n";
+        }
+
         return;
     }
+
+    svbmath::Vec3 point;
+
+    if (!GetMouseGroundPoint(point))
+        return;
 
     if (currentTool == Tool::Road) {
         if (!roadWaitingForSecondPoint) {
@@ -412,27 +498,184 @@ void MapEditor::HandlePlacementClick() {
         }
         else {
             Road road;
+
             road.id = nextId++;
             road.start = roadFirstPoint;
             road.end = point;
             road.width = 6.0f;
-            if (std::sqrt(
-                (road.end.x - road.start.x) * (road.end.x - road.start.x) +
-                (road.end.z - road.start.z) * (road.end.z - road.start.z)) > 0.5f) {
+
+            const float dx = road.end.x - road.start.x;
+            const float dz = road.end.z - road.start.z;
+
+            if (std::sqrt(dx * dx + dz * dz) > 0.5f)
                 roads.push_back(road);
-            }
+
             roadWaitingForSecondPoint = false;
         }
+
         return;
     }
 
     PlacedObject object;
+
     object.id = nextId++;
     object.type = ToolType(currentTool);
     object.position = point;
     object.yaw = 0.0f;
+
     objects.push_back(object);
     selectedObject = object.id;
+}
+
+void MapEditor::DrawSelection(const PlacedObject& object) {
+    glPushAttrib(
+        GL_ENABLE_BIT |
+        GL_CURRENT_BIT |
+        GL_LINE_BIT |
+        GL_LIGHTING_BIT
+    );
+
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+
+    glColor3f(1.0f, 0.85f, 0.1f);
+    glLineWidth(3.0f);
+
+    const float radius = GetObjectPickRadius(object);
+    const float y = GroundHeight(
+        object.position.x,
+        object.position.z
+    ) + 0.12f;
+
+    glBegin(GL_LINE_LOOP);
+
+    for (int i = 0; i < 64; ++i) {
+        const float angle = 2.0f * 3.14159265358979323846f * i / 64.0f;
+
+        glVertex3f(
+            object.position.x + std::cos(angle) * radius,
+            y,
+            object.position.z + std::sin(angle) * radius
+        );
+    }
+
+    glEnd();
+
+    glPopAttrib();
+}
+
+
+float MapEditor::GetObjectPickRadius(const PlacedObject& object) const {
+    if (object.type == "house") return 4.0f;
+    if (object.type == "tree") return 2.0f;
+    if (object.type == "lamp") return 1.2f;
+    if (object.type == "tank") return 2.5f;
+    if (object.type == "radar") return 2.5f;
+
+    return 2.0f;
+}
+
+
+bool MapEditor::IntersectObject(
+    const Ray& ray,
+    const PlacedObject& object,
+    float& distance
+) const {
+    // Половины размеров приблизительных Bounding Box.
+    svbmath::Vec3 halfSize{ 2.0f, 3.0f, 2.0f };
+
+    if (object.type == "house")
+        halfSize = { 6.0f, 5.0f, 6.0f };
+
+    else if (object.type == "tree")
+        halfSize = { 3.0f, 7.0f, 3.0f };
+
+    else if (object.type == "lamp")
+        halfSize = { 1.5f, 5.0f, 1.5f };
+
+    else if (object.type == "tank")
+        halfSize = { 3.5f, 2.5f, 4.5f };
+
+    else if (object.type == "radar")
+        halfSize = { 3.5f, 5.0f, 3.5f };
+
+    // Переводим луч в локальные координаты объекта.
+    // Это позволяет учитывать yaw.
+    const float angle = -object.yaw * DEG_TO_RAD;
+
+    const float c = std::cos(angle);
+    const float s = std::sin(angle);
+
+    const svbmath::Vec3 relative = Sub(
+        ray.origin,
+        object.position
+    );
+
+    const svbmath::Vec3 origin{
+        c * relative.x + s * relative.z,
+        relative.y,
+        -s * relative.x + c * relative.z
+    };
+
+    const svbmath::Vec3 direction{
+        c * ray.direction.x + s * ray.direction.z,
+        ray.direction.y,
+        -s * ray.direction.x + c * ray.direction.z
+    };
+
+    float tMin = 0.0f;
+    float tMax = FLT_MAX;
+
+    auto checkAxis = [&](float o, float d, float half) -> bool {
+        if (std::abs(d) < 0.000001f)
+            return o >= -half && o <= half;
+
+        float t1 = (-half - o) / d;
+        float t2 = (half - o) / d;
+
+        if (t1 > t2)
+            std::swap(t1, t2);
+
+        tMin = std::max(tMin, t1);
+        tMax = std::min(tMax, t2);
+
+        return tMin <= tMax;
+        };
+
+    if (!checkAxis(origin.x, direction.x, halfSize.x))
+        return false;
+
+    if (!checkAxis(origin.y, direction.y, halfSize.y))
+        return false;
+
+    if (!checkAxis(origin.z, direction.z, halfSize.z))
+        return false;
+
+    if (tMax < 0.0f)
+        return false;
+
+    distance = tMin;
+    return true;
+}
+
+
+int MapEditor::PickObject(const Ray& ray) const {
+    int closestId = -1;
+    float closestDistance = FLT_MAX;
+
+    for (const auto& object : objects) {
+        float distance = 0.0f;
+
+        if (IntersectObject(ray, object, distance)) {
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestId = object.id;
+            }
+        }
+    }
+
+    return closestId;
 }
 
 void MapEditor::HandleKeyboard(float deltaTime) {
@@ -440,8 +683,9 @@ void MapEditor::HandleKeyboard(float deltaTime) {
     if (io.WantCaptureKeyboard) return;
 
     const float yaw = cameraYaw * DEG_TO_RAD;
-    const svbmath::Vec3 forward{ std::sin(yaw), 0.0f, -std::cos(yaw) };
-    const svbmath::Vec3 right{ std::cos(yaw), 0.0f, std::sin(yaw) };
+
+    const svbmath::Vec3 forward{ -std::sin(yaw), 0.0f, -std::cos(yaw) };
+    const svbmath::Vec3 right{std::cos(yaw), 0.0f, -std::sin(yaw)};
 
     svbmath::Vec3 movement{ 0.0f, 0.0f, 0.0f };
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) movement = Add(movement, forward);
@@ -451,8 +695,23 @@ void MapEditor::HandleKeyboard(float deltaTime) {
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) movement.y += 1.0f;
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) movement.y -= 1.0f;
 
-    if (svbmath::Dot(movement, movement) > 0.0f)
-        cameraPosition = Add(cameraPosition, Mul(svbmath::Normalize(movement), moveSpeed * deltaTime));
+    float currentSpeed = moveSpeed;
+
+    if (cameraBoostEnabled &&
+        (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+            glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)) {
+        currentSpeed *= cameraBoostMultiplier;
+    }
+
+    if (svbmath::Dot(movement, movement) > 0.0f) {
+        cameraPosition = Add(
+            cameraPosition,
+            Mul(
+                svbmath::Normalize(movement),
+                currentSpeed * deltaTime
+            )
+        );
+    }
 
     PlacedObject* selected = FindSelectedObject();
     if (selected) {
@@ -547,10 +806,43 @@ void MapEditor::DrawImGui() {
     ImGui::Text("Стрелки влево/вправо — поворот выбранного объекта");
 
     ImGui::Separator();
+    ImGui::Text("Настройки камеры");
+
+    ImGui::SliderFloat(
+        "Скорость камеры",
+        &moveSpeed,
+        1.0f,
+        100.0f
+    );
+
+    ImGui::Checkbox(
+        "Ускорение камеры (Shift)",
+        &cameraBoostEnabled
+    );
+
+    if (cameraBoostEnabled) {
+        ImGui::SliderFloat(
+            "Множитель ускорения",
+            &cameraBoostMultiplier,
+            1.0f,
+            10.0f,
+            "%.1fx"
+        );
+    }
+
+    ImGui::Separator();
     ImGui::Text("Объекты на карте: %d", static_cast<int>(objects.size()));
     if (ImGui::BeginListBox("##objects", ImVec2(-FLT_MIN, 150.0f))) {
         for (const auto& object : objects) {
-            const std::string label = object.type + "  #" + std::to_string(object.id);
+            std::string displayName = object.type;
+
+            if (object.type == "house") displayName = "Дом";
+            else if (object.type == "tree") displayName = "Дерево";
+            else if (object.type == "lamp") displayName = "Фонарный столб";
+            else if (object.type == "tank") displayName = "Танк";
+            else if (object.type == "radar") displayName = "Радар";
+
+            const std::string label = displayName + "  #" + std::to_string(object.id);
             if (ImGui::Selectable(label.c_str(), selectedObject == object.id))
                 selectedObject = object.id;
         }
@@ -668,6 +960,8 @@ bool MapEditor::LoadJson(const std::string& path) {
         selectedObject = -1;
         nextId = maxId + 1;
         roadWaitingForSecondPoint = false;
+        SetTool(Tool::Select);
+
         return true;
     }
     catch (const std::exception& e) {
