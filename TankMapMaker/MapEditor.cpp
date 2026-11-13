@@ -83,7 +83,7 @@ void MapEditor::Initialize() {
         }
 
         if (type == "lamp") {
-            model->LoadTexture("models/streetmap/tex.jpg");
+            model->LoadTexture("models/streetmap/texture.png");
         }
         if (type == "tree") {
             model->LoadTextureFromFile("models/tree/texture.png");
