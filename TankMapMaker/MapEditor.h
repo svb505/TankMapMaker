@@ -54,7 +54,11 @@ private:
         Street,
         Tree,
         Lamp,
-        Road
+        Road,
+        Fence,
+        Trashbin,
+        Flowerbed,
+        Bench
     };
 
     struct PlacedObject {

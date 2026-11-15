@@ -98,6 +98,10 @@ int main() {
     editor.AddModelAsset({ "street", "Улица", "models/build/rue_2_cotes_complete.obj", 0.6f });
     editor.AddModelAsset({ "tree", "Дерево", "models/trees/tree.obj", 1.0f });
     editor.AddModelAsset({ "lamp", "Фонарный столб", "models/streetlamp/streetlamp.obj", 1.0f });
+    editor.AddModelAsset({ "fence", "Забор", "models/fence/city_fence.obj", 1.0f });
+    editor.AddModelAsset({ "trashbin", "Урна", "models/trash_bin/trash_bin.obj", 1.0f });
+    editor.AddModelAsset({ "flowerbed", "Клумба", "models/flower_bed/flower_bed.obj", 1.0f });
+    editor.AddModelAsset({ "bench", "Лавочка", "models/bench/bench.obj", 1.0f });
 
     MapEditorHooks hooks;
 

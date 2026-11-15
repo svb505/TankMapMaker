@@ -1,0 +1,18 @@
+# City fence materials
+newmtl fence_concrete
+Ka 0.0 0.0 0.0
+Kd 1.0 1.0 1.0
+Ks 0.0 0.0 0.0
+Ns 1.0
+d 1.0
+illum 1
+map_Kd textures/fence_concrete.png
+
+newmtl fence_metal
+Ka 0.0 0.0 0.0
+Kd 1.0 1.0 1.0
+Ks 0.1 0.1 0.1
+Ns 10.0
+d 1.0
+illum 1
+map_Kd textures/fence_metal.png

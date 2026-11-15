@@ -569,6 +569,10 @@ float MapEditor::GetObjectPickRadius(const PlacedObject& object) const {
     if (object.type == "street") return 4.0f;
     if (object.type == "tree") return 2.0f;
     if (object.type == "lamp") return 1.2f;
+    if (object.type == "bench") return 1.0f;
+    if (object.type == "trashbin") return 1.0f;
+    if (object.type == "flowerbed") return 1.2f;
+    if (object.type == "fence") return 2.5f;
     if (object.type == "tank") return 2.5f;
     if (object.type == "radar") return 2.5f;
 
@@ -591,6 +595,15 @@ bool MapEditor::IntersectObject(
         halfSize = { 3.0f, 7.0f, 3.0f };
 
     else if (object.type == "lamp")
+        halfSize = { 1.5f, 5.0f, 1.5f };
+    else if (object.type == "trashbin")
+        halfSize = { 1.5f, 5.0f, 1.5f };
+    else if (object.type == "flowerbed")
+        halfSize = { 1.5f, 5.0f, 1.5f };
+    else if (object.type == "bench")
+        halfSize = { 1.5f, 5.0f, 1.5f };
+
+    else if (object.type == "fence")
         halfSize = { 1.5f, 5.0f, 1.5f };
 
     else if (object.type == "tank")
@@ -736,6 +749,10 @@ const char* MapEditor::ToolName(Tool tool) {
     case Tool::Street: return "Улица";
     case Tool::Tree: return "Дерево";
     case Tool::Lamp: return "Фонарный столб";
+    case Tool::Fence: return "Забор";
+    case Tool::Bench: return "Лавочка";
+    case Tool::Trashbin: return "Урна";
+    case Tool::Flowerbed: return "Клумба";
     case Tool::Road: return "Дорога";
     default: return "Неизвестно";
     }
@@ -746,6 +763,10 @@ std::string MapEditor::ToolType(Tool tool) {
     case Tool::Street: return "street";
     case Tool::Tree: return "tree";
     case Tool::Lamp: return "lamp";
+    case Tool::Fence: return "fence";
+    case Tool::Bench: return "bench";
+    case Tool::Trashbin: return "trashbin";
+    case Tool::Flowerbed: return "flowerbed";
     default: return {};
     }
 }
@@ -782,6 +803,14 @@ void MapEditor::DrawImGui() {
     if (ImGui::Button("Дерево")) SetTool(Tool::Tree);
     ImGui::SameLine();
     if (ImGui::Button("Фонарный столб")) SetTool(Tool::Lamp);
+    ImGui::SameLine();
+    if (ImGui::Button("Забор")) SetTool(Tool::Fence);
+    ImGui::SameLine();
+    if (ImGui::Button("Урна")) SetTool(Tool::Trashbin);
+    ImGui::SameLine();
+    if (ImGui::Button("Клумба")) SetTool(Tool::Flowerbed);
+    ImGui::SameLine();
+    if (ImGui::Button("Лавочка")) SetTool(Tool::Bench);
     ImGui::SameLine();
     if (ImGui::Button("Дорога")) SetTool(Tool::Road);
 
@@ -831,8 +860,7 @@ void MapEditor::DrawImGui() {
             if (object.type == "street") displayName = "Улица";
             else if (object.type == "tree") displayName = "Дерево";
             else if (object.type == "lamp") displayName = "Фонарный столб";
-            else if (object.type == "tank") displayName = "Танк";
-            else if (object.type == "radar") displayName = "Радар";
+            else if (object.type == "fence") displayName = "Забор";
 
             const std::string label = displayName + "  #" + std::to_string(object.id);
             if (ImGui::Selectable(label.c_str(), selectedObject == object.id))
